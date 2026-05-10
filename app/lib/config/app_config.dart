@@ -88,7 +88,17 @@ class AppConfig {
   bool get canProcessAudio => enableAiProcessing && isBackendConfigured;
 
   /// Get WebSocket URL for audio streaming
-  String get audioWebSocketUrl => apiBaseUrl.replaceFirst('http', 'ws');
+  String get audioWebSocketUrl {
+    if (apiBaseUrl.startsWith('https://')) {
+      return apiBaseUrl.replaceFirst('https://', 'wss://');
+    } else if (apiBaseUrl.startsWith('http://')) {
+      return apiBaseUrl.replaceFirst('http://', 'ws://');
+    }
+    // Fallback for localhost or IP without scheme
+    return apiBaseUrl.startsWith('ws://') || apiBaseUrl.startsWith('wss://')
+        ? apiBaseUrl
+        : 'ws://$apiBaseUrl';
+  }
 
   /// Validate configuration
   void validate() {
