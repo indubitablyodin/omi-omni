@@ -44,9 +44,11 @@ services:
   # Speech-to-Text: Faster Whisper (AMD ROCm)
   # =============================================================================
   whisper:
-    # Use ROCm-compatible Whisper image
-    # Note: If you get rate limits, run: docker login ghcr.io
-    image: ghcr.io/cocktailpeanut/faster-whisper:latest-rocm
+    # Build custom Whisper with ROCm support
+    # Using a Dockerfile that installs ROCm and faster-whisper
+    build:
+      context: ../docker
+      dockerfile: Dockerfile.whisper-amd
     container_name: omi-omni-whisper
     ports:
       - "${WHISPER_PORT:-8001}:8000"
@@ -70,11 +72,6 @@ services:
     restart: unless-stopped
     networks:
       - omi-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   # =============================================================================
   # LLM: Ollama (AMD ROCm)

@@ -1,0 +1,51 @@
+# Dockerfile for Faster Whisper with AMD ROCm support
+# This builds a container with ROCm and faster-whisper for AMD GPUs
+
+FROM rocm/rocm-terminal:latest
+
+# Set environment variables for ROCm
+ENV HSA_OVERRIDE_GFX_VERSION=10.3.0
+ENV ROCM_PATH=/opt/rocm
+ENV HIP_PATH=/opt/rocm
+ENV PATH=/opt/rocm/bin:${PATH}
+ENV LD_LIBRARY_PATH=/opt/rocm/lib:${LD_LIBRARY_PATH}
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    python3 \
+    python3-pip \
+    python3-venv \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create and activate virtual environment
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:${PATH}"
+
+# Install faster-whisper with ROCm support
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir faster-whisper && \
+    pip install --no-cache-dir faster-whisper-rocm
+
+# Install server dependencies
+RUN pip install --no-cache-dir fastapi uvicorn python-multipart
+
+# Copy server script
+COPY whisper-server.py /app/whisper-server.py
+
+# Create models directory
+RUN mkdir -p /models
+
+# Set working directory
+WORKDIR /app
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import requests; requests.get('http://localhost:8000/health', timeout=5)" || exit 1
+
+# Start the server
+CMD ["python", "whisper-server.py"]
