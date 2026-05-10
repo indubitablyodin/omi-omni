@@ -1,0 +1,86 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'app/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'app/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Java JDK
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.22.2'
+        channel: 'stable'
+
+    - name: Get Flutter dependencies
+      run: flutter pub get
+      working-directory: app
+
+    - name: Enable Android licensing
+      run: |
+        mkdir -p ~/.android/repositories.cfg
+        echo "count=0" > ~/.android/repositories.cfg
+        yes | sdkmanager --licenses > /dev/null
+
+    - name: Build APK
+      run: flutter build apk --release
+      working-directory: app
+
+    - name: Rename APK
+      run: |
+        mv app/build/app/outputs/flutter-apk/app-release.apk omi-omni-release.apk
+
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: omi-omni-apk
+        path: omi-omni-release.apk
+        retention-days: 30
+
+    - name: Create GitHub Release (on main push)
+      if: github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v2
+      with:
+        name: Omi Omni APK v${{ github.run_number }}
+        tag_name: apk-v${{ github.run_number }}
+        files: omi-omni-release.apk
+        body: |
+          ## Omi Omni Android APK
+          
+          **Build Number:** ${{ github.run_number }}
+          **Commit:** ${{ github.sha }}
+          
+          ### Download and Install:
+          1. Download `omi-omni-release.apk`
+          2. Transfer to your Android device
+          3. Enable "Install from unknown sources" in Settings
+          4. Tap the APK to install
+          
+          ### Backend Setup:
+          ```bash
+          git clone https://github.com/indubitablyodin/omi-omni.git
+          cd omi-omni
+          ./scripts/setup.sh
+          docker compose -f docker/docker-compose-amd.yml up -d
+          ```
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

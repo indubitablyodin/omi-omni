@@ -8,6 +8,41 @@ This unified repository combines:
 - ✅ **Self-Hosted Backend** (FastAPI) - Local AI processing pipeline
 - ✅ **AMD/ROCm Support** - Full compatibility with AMD GPUs (RX 7900 XTX, etc.)
 
+## ⚡ Quick Start (Two Commands!)
+
+```bash
+# 1. Clone and setup
+git clone https://github.com/indubitablyodin/omi-omni.git
+cd omi-omni
+
+# 2. Download models (1.4GB Whisper model)
+./scripts/download-models.sh
+
+# 3. Start backend (AMD GPU)
+make start-amd
+
+# Or for NVIDIA GPU:
+make start
+```
+
+That's it! Backend will be available at `http://localhost:8000`
+
+**APK:** Check [GitHub Actions](https://github.com/indubitablyodin/omi-omni/actions) for auto-built APKs, or run `make apk`
+
+## 🎛️ Available Commands
+
+| Command | Description |
+|---------|-------------|
+| `make help` | Show all available commands |
+| `make setup` | Full setup (env, models, database) |
+| `make start` | Start all backend services |
+| `make start-amd` | Start with AMD/ROCm configuration |
+| `make stop` | Stop all backend services |
+| `make restart` | Restart all backend services |
+| `make apk` | Build Android APK |
+| `make clean` | Remove containers and volumes |
+| `make clean-all` | Full cleanup (containers, volumes, data) |
+
 ## 🎯 Project Vision
 
 Omi Omni eliminates cloud dependencies by providing a complete local ecosystem:
