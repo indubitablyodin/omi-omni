@@ -10,7 +10,7 @@ help: ## Show this help message
 	@echo "Omi Omni - Available Commands:"
 	@echo ""
 	@echo "  make setup          - Run full setup (creates env, downloads models, init DB)"
-	@echo "  make start          - Start all backend services"
+	@echo "  make start          - Start all backend services (auto-detects GPU)"
 	@echo "  make stop           - Stop all backend services"
 	@echo "  make restart        - Restart all backend services"
 	@echo "  make backend        - Start only the backend API"
@@ -18,8 +18,9 @@ help: ## Show this help message
 	@echo "  make clean          - Remove all containers and volumes"
 	@echo "  make clean-all      - Full cleanup (containers, volumes, data)"
 	@echo ""
-	@echo "AMD GPU Users:"
+	@echo "Hardware-Specific:"
 	@echo "  make start-amd      - Start with AMD/ROCm configuration"
+	@echo "  make start-mac      - Start with Apple Silicon (M4 MacBook Air) configuration"
 	@echo ""
 	@echo "Environment Variables:"
 	@echo "  COMPOSE_FILE        - Docker compose file to use (default: docker/docker-compose.yml)"
@@ -143,9 +144,25 @@ start-amd: ## Start with AMD/ROCm configuration
 	@echo "Note: If you get 403 errors from ghcr.io, run:"
 	@echo "  echo \"\$GITHUB_TOKEN\" | docker login ghcr.io -u USERNAME --password-stdin"
 	@echo ""
-	docker compose -f docker/docker-compose-amd.yml up -d
+	docker compose -f docker/docker-compose-amd.yml up -d --build
 	@echo ""
 	@echo "Backend available at: http://localhost:8000"
+
+start-mac: ## Start with Apple Silicon (M4 MacBook Air) configuration
+	@echo "Starting with Apple Silicon configuration (lightweight)..."
+	@if [ ! -f .env ]; then \
+		cp .env.nvidia .env; \
+		echo "Created .env from .env.nvidia template"; \
+		echo "IMPORTANT: Edit .env and change all 'change-me-*' passwords!"; \
+	fi
+	@if [ ! -f docker/.env ]; then \
+		cp .env docker/.env; \
+		echo "Created docker/.env from .env"; \
+	fi
+	docker compose -f docker/docker-compose-mac.yml up -d
+	@echo ""
+	@echo "Backend available at: http://localhost:8000"
+	@echo "Using lightweight models optimized for Apple Silicon"
 
 stop: ## Stop all backend services
 	docker compose -f $(COMPOSE_FILE) down

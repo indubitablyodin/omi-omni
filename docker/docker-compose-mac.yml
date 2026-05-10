@@ -1,0 +1,229 @@
+version: '3.8'
+
+# Omi Omni - Lightweight Configuration for Apple Silicon (M4 MacBook Air)
+# Optimized for low RAM usage and Apple Silicon performance
+# Uses CPU-only processing with Apple-optimized models
+
+services:
+  # =============================================================================
+  # Core Backend API
+  # =============================================================================
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: omi-omni-backend
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    env_file:
+      - .env
+    environment:
+      - MODEL_TIER=lightweight
+      - WHISPER_MODEL=small
+      - LLM_MODEL=qwen2.5:0.5b
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      minio:
+        condition: service_healthy
+      meilisearch:
+        condition: service_started
+    volumes:
+      - ../backend:/app
+      - backend-data:/app/data
+    restart: unless-stopped
+    networks:
+      - omi-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # Speech-to-Text: Faster Whisper (CPU-optimized for Apple Silicon)
+  # =============================================================================
+  whisper:
+    # Use CPU-optimized image for Apple Silicon
+    image: ghcr.io/cocktailpeanut/faster-whisper:latest
+    container_name: omi-omni-whisper
+    ports:
+      - "${WHISPER_PORT:-8001}:8000"
+    environment:
+      - WHISPER__MODEL=${WHISPER_MODEL:-Systran/faster-whisper-small}
+      - WHISPER__DEVICE=cpu
+      - WHISPER__COMPUTE_TYPE=int8
+      - WHISPER__CPU_THREADS=4
+      - WHISPER__NUM_WORKERS=1
+    volumes:
+      - whisper-models:/root/.cache
+      - ../models/whisper:/models
+    restart: unless-stopped
+    networks:
+      - omi-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # LLM: Ollama (Lightweight models for Apple Silicon)
+  # =============================================================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: omi-omni-ollama
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    environment:
+      - OLLAMA_ORIGINS=*
+      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-24h}
+      - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-1}
+      - OLLAMA_MAX_VRAM=${OLLAMA_MAX_VRAM:-2gb}
+    restart: unless-stopped
+    networks:
+      - omi-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # Database: PostgreSQL (Lightweight)
+  # =============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: omi-omni-postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-omi}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-omi123}
+      - POSTGRES_DB=${POSTGRES_DB:-omi}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    restart: unless-stopped
+    networks:
+      - omi-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-omi} -d ${POSTGRES_DB:-omi}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =============================================================================
+  # Vector Database: Qdrant (Lightweight)
+  # =============================================================================
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: omi-omni-qdrant
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__API_KEY=${MEILI_MASTER_KEY:-change-me}
+    restart: unless-stopped
+    networks:
+      - omi-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/readyz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # Object Storage: MinIO (Lightweight)
+  # =============================================================================
+  minio:
+    image: minio/minio:latest
+    container_name: omi-omni-minio
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minio123}
+      - MINIO_VOLUMES="/data"
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    networks:
+      - omi-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # Cache: Redis (Lightweight)
+  # =============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: omi-omni-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - omi-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # Search: Meilisearch (Lightweight)
+  # =============================================================================
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    container_name: omi-omni-meilisearch
+    ports:
+      - "${MEILI_PORT:-7700}:7700"
+    environment:
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:-change-me}
+      - MEILI_NO_ANALYTICS=true
+    volumes:
+      - meilisearch-data:/meili_data
+    restart: unless-stopped
+    networks:
+      - omi-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# =============================================================================
+# Docker Volumes
+# =============================================================================
+volumes:
+  postgres-data:
+  qdrant-data:
+  minio-data:
+  redis-data:
+  meilisearch-data:
+  whisper-models:
+  ollama-models:
+  backend-data:
+
+# =============================================================================
+# Docker Networks
+# =============================================================================
+networks:
+  omi-network:
+    driver: bridge
