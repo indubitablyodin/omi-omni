@@ -174,11 +174,15 @@ async def audio_websocket(
                 break
             
             # Handle binary audio data
-            if isinstance(message, bytes):
-                audio_buffer.extend(message)
+            
+            # ASGI message dict has "bytes" or "text" keys
+            audio_bytes = message.get("bytes")
+            text = message.get("text")
+
+            if audio_bytes is not None:
+                audio_buffer.extend(audio_bytes)
                 is_streaming = True
-                
-                # Send keepalive acknowledgment every few chunks
+
                 if len(audio_buffer) % (settings.max_audio_chunk_size * 10) < settings.max_audio_chunk_size:
                     await websocket.send_json({
                         "type": "ack",
@@ -186,8 +190,10 @@ async def audio_websocket(
                         "conversation_id": conversation_id,
                     })
                 continue
-            
-            # Handle text/JSON messages
+
+            if text is not None:
+                message = text
+                # keep the existing JSON/text handling below
             if isinstance(message, str):
                 try:
                     data = json.loads(message)

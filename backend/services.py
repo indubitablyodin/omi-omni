@@ -37,7 +37,7 @@ class WhisperService:
         """Transcribe audio bytes. Returns OpenAI-compatible response."""
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
-                files = {"file": ("audio.wav", audio_bytes, "audio/wav")}
+                files = {"audio": ("audio.wav", audio_bytes, "audio/wav")}
                 data = {
                     "model": self.model,
                     "response_format": "verbose_json",
@@ -47,7 +47,7 @@ class WhisperService:
                     data["language"] = language
                 
                 response = await client.post(
-                    f"{self.base_url}/v1/audio/transcriptions",
+                    f"{self.base_url}/transcribe",
                     files=files,
                     data=data,
                 )

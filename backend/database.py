@@ -6,7 +6,7 @@ SQLAlchemy async database configuration and models.
 
 import logging
 from typing import AsyncGenerator
-from sqlalchemy import Column, Integer, String, Text, DateTime, JSON, ForeignKey, func
+from sqlalchemy import Column, Integer, String, Text, DateTime, JSON, ForeignKey, Float, func, select
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, relationship

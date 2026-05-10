@@ -9,7 +9,7 @@ import '../services/models.dart';
 /// Backend Provider
 /// Manages connection to the Omi Omni backend and provides data
 class BackendProvider extends ChangeNotifier {
-  final OmiApiClient _apiClient;
+  OmiApiClient _apiClient;
   
   // Connection state
   BackendConnectionState _connectionState = BackendConnectionState.disconnected;
