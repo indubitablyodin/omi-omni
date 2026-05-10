@@ -1,0 +1,99 @@
+name: omi_omni
+description: Omi Omni - Self-hosted Omi AI wearable application with full local capabilities.
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none'
+
+# Version and build number
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+# Dependencies
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Core Flutter packages
+  cupertino_icons: ^1.0.6
+  provider: ^6.1.2
+  
+  # BLE Communication (for Omi device)
+  flutter_blue_plus: ^1.33.6
+  
+  # Audio Processing
+  opus_dart: ^3.0.1
+  opus_flutter: ^3.0.3
+  just_audio: ^0.9.36
+  path_provider: ^2.1.2
+  
+  # File Management
+  share_plus: ^9.0.0
+  file_picker: ^8.0.0+1
+  path: ^1.9.0
+  
+  # Permissions
+  permission_handler: ^11.3.1
+  device_info_plus: ^10.1.0
+  
+  # State Management
+  shared_preferences: ^2.2.3
+  
+  # HTTP Client for Backend API
+  http: ^1.2.1
+  
+  # WebSocket for real-time audio streaming
+  web_socket_channel: ^2.4.4
+  
+  # JSON Serialization
+  json_annotation: ^4.8.1
+  
+  # Utilities
+  uuid: ^4.4.0
+  collection: ^1.18.0
+  intl: ^0.19.0
+  equatable: ^2.0.5
+  tuple: ^2.0.2
+  
+  # OTA Firmware Updates
+  nordic_dfu: ^6.1.4+hotfix
+  mcumgr_flutter: ^0.4.2
+  flutter_archive: ^6.0.3
+  
+  # Audio utilities
+  wav: ^1.3.0
+  
+  # UI Components
+  auto_size_text: ^3.0.0
+
+# Dev dependencies
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  build_runner: ^2.4.8
+  json_serializable: ^6.7.1
+
+# Flutter configuration
+flutter:
+  # Material Icons
+  uses-material-design: true
+  
+  # Assets
+  assets:
+    - assets/firmware/
+    - assets/images/
+  
+  # Fonts (optional)
+  # fonts:
+  #   - family: YourFont
+  #     fonts:
+  #       - asset: fonts/YourFont-Regular.ttf
+  #       - asset: fonts/YourFont-Bold.ttf
+  #         weight: 700
+
+# Scripts (optional)
+# scripts:
+#   pre_build: scripts/pre_build.sh
+#   post_build: scripts/post_build.sh

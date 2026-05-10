@@ -1,0 +1,78 @@
+# Flutter
+*.dart_build
+.dart_tool/
+.build/
+.flutter-plugins-dependencies
+
+# Android
+android/app/build/
+android/.gradle/
+android/build/
+android/gradle/
+android/.idea/
+
+# iOS
+ios/.symlinks/
+ios/Flutter/
+ios/.fseventsd
+ios/Debug/
+ios/DerivedData/
+ios/ServiceDefinitions.json
+ios/Runner.xcworkspace/
+
+# Firmware
+firmware/*/build/
+firmware/*/.config/
+firmware/*/zephyr/
+
+# Backend
+backend/__pycache__/
+backend/*.pyc
+backend/.pytest_cache/
+backend/.venv/
+
+# Docker
+.docker/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Local configuration
+config.local.yaml
+secrets.yaml
+
+# Database
+data/
+*.db
+*.sqlite
+
+# Models
+models/
+*.gguf
+*.safetensors
+*.bin
+
+# Docker volumes
+docker-data/

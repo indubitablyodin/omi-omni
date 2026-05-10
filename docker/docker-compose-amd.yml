@@ -1,0 +1,240 @@
+version: '3.8'
+
+# Omi Omni - Self-Hosted Backend Stack for AMD GPUs
+# This configuration is optimized for AMD RX 7000 series (including XTX)
+# Uses ROCm for GPU acceleration
+
+services:
+  # =============================================================================
+  # Core Backend API
+  # =============================================================================
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: omi-omni-backend
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    env_file:
+      - ../.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      minio:
+        condition: service_healthy
+      meilisearch:
+        condition: service_started
+    volumes:
+      - ../backend:/app
+      - backend-data:/app/data
+    restart: unless-stopped
+    networks:
+      - omi-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # Speech-to-Text: Faster Whisper (AMD ROCm)
+  # =============================================================================
+  whisper:
+    # Use ROCm-compatible image
+    image: ghcr.io/cocktailpeanut/faster-whisper:latest-rocm
+    container_name: omi-omni-whisper
+    ports:
+      - "${WHISPER_PORT:-8001}:8000"
+    environment:
+      - WHISPER__MODEL=${WHISPER_MODEL:-Systran/faster-whisper-large-v3}
+      - WHISPER__DEVICE=auto
+      - WHISPER__COMPUTE_TYPE=${WHISPER_COMPUTE_TYPE:-float16}
+      # AMD-specific environment variables
+      - HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION:-10.3.0}
+      - ROCM_PATH=${ROCM_PATH:-/opt/rocm}
+      - HIP_PATH=${HIP_PATH:-/opt/rocm}
+    volumes:
+      - whisper-models:/root/.cache
+    devices:
+      - "/dev/kfd"
+      - "/dev/dri"
+    group_add:
+      - render
+      - video
+    restart: unless-stopped
+    networks:
+      - omi-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # LLM: Ollama (AMD ROCm)
+  # =============================================================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: omi-omni-ollama
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    environment:
+      - OLLAMA_ORIGINS=*
+      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-24h}
+      - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-2}
+      # AMD-specific environment variables
+      - HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION:-10.3.0}
+      - ROCM_PATH=${ROCM_PATH:-/opt/rocm}
+      - HIP_PATH=${HIP_PATH:-/opt/rocm}
+    devices:
+      - "/dev/kfd"
+      - "/dev/dri"
+    group_add:
+      - render
+      - video
+    restart: unless-stopped
+    networks:
+      - omi-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # Vector Database: Qdrant
+  # =============================================================================
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: omi-omni-qdrant
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY:-}
+    restart: unless-stopped
+    networks:
+      - omi-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/readyz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # Database: PostgreSQL
+  # =============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: omi-omni-postgres
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-omi}
+      - POSTGRES_USER=${POSTGRES_USER:-omi}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ../scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-omi}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - omi-network
+
+  # =============================================================================
+  # Object Storage: MinIO (S3-compatible)
+  # =============================================================================
+  minio:
+    image: minio/minio:latest
+    container_name: omi-omni-minio
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-changeme}
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - omi-network
+
+  # =============================================================================
+  # Cache: Redis
+  # =============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: omi-omni-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: redis-server --requirepass ${REDIS_PASSWORD:-changeme}
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-changeme}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - omi-network
+
+  # =============================================================================
+  # Search: Meilisearch
+  # =============================================================================
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    container_name: omi-omni-meilisearch
+    ports:
+      - "${MEILISEARCH_PORT:-7700}:7700"
+    environment:
+      - MEILI_MASTER_KEY=${MEILISEARCH_KEY:-changeme}
+      - MEILI_ENV=production
+    volumes:
+      - meilisearch-data:/meili_data
+    restart: unless-stopped
+    networks:
+      - omi-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  backend-data:
+  whisper-models:
+  ollama-models:
+  postgres-data:
+  qdrant-data:
+  minio-data:
+  redis-data:
+  meilisearch-data:
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  omi-network:
+    driver: bridge
