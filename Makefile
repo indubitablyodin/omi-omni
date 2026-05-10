@@ -115,12 +115,30 @@ start: ## Start all backend services
 	@if [ "$(GPU_TYPE)" = "amd" ]; then \
 		COMPOSE_FILE="docker/docker-compose-amd.yml"; \
 	fi
+	@if [ ! -f .env ]; then \
+		cp .env.nvidia .env; \
+		echo "Created .env from .env.nvidia template"; \
+		echo "IMPORTANT: Edit .env and change all 'change-me-*' passwords!"; \
+	fi
+	@if [ ! -f docker/.env ]; then \
+		cp .env docker/.env; \
+		echo "Created docker/.env from .env"; \
+	fi
 	docker compose -f $(COMPOSE_FILE) up -d
 	@echo ""
 	@echo "Backend available at: http://localhost:8000"
 
 start-amd: ## Start with AMD/ROCm configuration
 	@echo "Starting with AMD ROCm configuration..."
+	@if [ ! -f .env ]; then \
+		cp .env.amd .env; \
+		echo "Created .env from .env.amd template"; \
+		echo "IMPORTANT: Edit .env and change all 'change-me-*' passwords!"; \
+	fi
+	@if [ ! -f docker/.env ]; then \
+		cp .env docker/.env; \
+		echo "Created docker/.env from .env"; \
+	fi
 	docker compose -f docker/docker-compose-amd.yml up -d
 	@echo ""
 	@echo "Backend available at: http://localhost:8000"
