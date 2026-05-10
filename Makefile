@@ -139,6 +139,10 @@ start-amd: ## Start with AMD/ROCm configuration
 		cp .env docker/.env; \
 		echo "Created docker/.env from .env"; \
 	fi
+	@echo ""
+	@echo "Note: If you get 403 errors from ghcr.io, run:"
+	@echo "  echo \"\$GITHUB_TOKEN\" | docker login ghcr.io -u USERNAME --password-stdin"
+	@echo ""
 	docker compose -f docker/docker-compose-amd.yml up -d
 	@echo ""
 	@echo "Backend available at: http://localhost:8000"

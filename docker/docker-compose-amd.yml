@@ -44,7 +44,8 @@ services:
   # Speech-to-Text: Faster Whisper (AMD ROCm)
   # =============================================================================
   whisper:
-    # Use ROCm-compatible image
+    # Use ROCm-compatible Whisper image
+    # Note: If you get rate limits, run: docker login ghcr.io
     image: ghcr.io/cocktailpeanut/faster-whisper:latest-rocm
     container_name: omi-omni-whisper
     ports:
@@ -59,6 +60,7 @@ services:
       - HIP_PATH=${HIP_PATH:-/opt/rocm}
     volumes:
       - whisper-models:/root/.cache
+      - ../models/whisper:/models
     devices:
       - "/dev/kfd"
       - "/dev/dri"
