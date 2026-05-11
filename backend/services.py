@@ -12,7 +12,7 @@ from typing import Optional, List, Dict, Any
 from minio import Minio
 from minio.error import S3Error
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams, PointStruct, Filter, MustCondition, MatchValue
+from qdrant_client.models import Distance, VectorParams, PointStruct, Filter, FieldCondition, MatchValue
 from redis.asyncio import Redis
 from openai import AsyncOpenAI
 from config import get_settings
@@ -300,9 +300,9 @@ class VectorService:
                 filter_conditions = []
                 for key, value in filter_dict.items():
                     filter_conditions.append(
-                        MustCondition(
-                            condition=MatchValue(
-                                key=key,
+                        FieldCondition(
+                            key=key,
+                            match=MatchValue(
                                 value=value,
                             )
                         )
