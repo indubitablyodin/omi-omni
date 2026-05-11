@@ -14,7 +14,7 @@ services:
       dockerfile: Dockerfile
     container_name: omi-omni-backend
     ports:
-      - "${BACKEND_PORT:-8000}:8000"
+      - "${BACKEND_HOST_PORT:-8002}:8000"
     env_file:
       - .env
     environment:
@@ -52,7 +52,7 @@ services:
     image: ghcr.io/cocktailpeanut/faster-whisper:latest
     container_name: omi-omni-whisper
     ports:
-      - "${WHISPER_PORT:-8001}:8000"
+      - "${WHISPER_HOST_PORT:-8001}:9000"
     environment:
       - WHISPER__MODEL=${WHISPER_MODEL:-Systran/faster-whisper-small}
       - WHISPER__DEVICE=cpu
