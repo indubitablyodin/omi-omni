@@ -48,17 +48,16 @@ services:
   # Speech-to-Text: Faster Whisper (CPU-optimized for Apple Silicon)
   # =============================================================================
   whisper:
-    # Use CPU-optimized image for Apple Silicon
-    image: ghcr.io/cocktailpeanut/faster-whisper:latest
+    # Use OpenAI-compatible Whisper server for Apple Silicon
+    image: hwdsl2/whisper-server:latest
     container_name: omi-omni-whisper
     ports:
       - "${WHISPER_HOST_PORT:-8001}:9000"
     environment:
-      - WHISPER__MODEL=${WHISPER_MODEL:-Systran/faster-whisper-small}
-      - WHISPER__DEVICE=cpu
-      - WHISPER__COMPUTE_TYPE=int8
-      - WHISPER__CPU_THREADS=4
-      - WHISPER__NUM_WORKERS=1
+      - WHISPER_MODEL=${WHISPER_MODEL:-small}
+      - WHISPER_DEVICE=cpu
+      - WHISPER_COMPUTE_TYPE=int8
+      - WHISPER_THREADS=4
     volumes:
       - whisper-models:/root/.cache
       - ../models/whisper:/models
