@@ -28,13 +28,13 @@ class Settings(BaseSettings):
     # Whisper (Speech-to-Text)
     whisper_port: int = Field(default=8001, env="WHISPER_PORT")
     whisper_model: str = Field(default="Systran/faster-whisper-large-v3", env="WHISPER_MODEL")
-    whisper_url: str = Field(default="http://whisper:8000", env="WHISPER_URL")
+    whisper_url: str = Field(default="http://whisper:9000", env="WHISPER_URL")
     whisper_compute_type: str = Field(default="float16", env="WHISPER_COMPUTE_TYPE")
     
     # Ollama (LLM)
     ollama_port: int = Field(default=11434, env="OLLAMA_PORT")
     ollama_url: str = Field(default="http://ollama:11434", env="OLLAMA_URL")
-    ollama_model: str = Field(default="qwen2.5:14b", env="OLLAMA_MODEL")
+    ollama_model: str = Field(default="qwen2.5:0.5b", env="OLLAMA_MODEL")
     ollama_keep_alive: str = Field(default="24h", env="OLLAMA_KEEP_ALIVE")
     ollama_max_loaded_models: int = Field(default=2, env="OLLAMA_MAX_LOADED_MODELS")
     

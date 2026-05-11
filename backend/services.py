@@ -59,7 +59,7 @@ class WhisperService:
         """Check if Whisper service is healthy."""
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
-                response = await client.get(f"{self.base_url}/health")
+                response = await client.get(f"{self.base_url}/v1/models")
                 return response.status_code == 200
         except Exception as e:
             logger.warning(f"Whisper health check failed: {e}")
