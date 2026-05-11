@@ -167,8 +167,13 @@ class StorageService:
     """MinIO S3-compatible object storage."""
     
     def __init__(self):
+        # Defensively append port if endpoint has no port
+        minio_endpoint = settings.minio_endpoint
+        if ":" not in minio_endpoint:
+            minio_endpoint = f"{minio_endpoint}:{settings.minio_port}"
+        
         self.client = Minio(
-            settings.minio_endpoint,
+            minio_endpoint,
             access_key=settings.minio_root_user,
             secret_key=settings.minio_root_password,
             secure=settings.minio_secure,
