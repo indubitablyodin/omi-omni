@@ -103,7 +103,7 @@ class Memory(Base):
     content = Column(Text, nullable=False)
     embedding_id = Column(String(36), nullable=True)  # ID in Qdrant
     category = Column(String(50), nullable=True)  # e.g., conversation, note, action_item
-    metadata = Column(JSON, nullable=True)  # Additional metadata
+    memory_metadata = Column("metadata", JSON, nullable=True)  # Additional metadata
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
