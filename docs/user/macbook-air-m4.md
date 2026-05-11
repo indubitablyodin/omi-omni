@@ -18,7 +18,16 @@ cd omi-omni
 make start-mac
 ```
 
-Backend will be available at: `http://localhost:8000`
+Backend will be available at: `http://127.0.0.1:8002`
+
+**Important:** Host-published ports are different from container ports:
+- Backend: container port 8000, host port 8002
+- Whisper: container port 9000, host port 8001
+- MinIO: container port 9000, host port 9000
+
+Inside the Docker Compose network, services communicate using container ports:
+- Backend talks to Whisper at `whisper:9000`
+- Backend talks to MinIO at `minio:9000`
 
 ## 📊 Resource Configuration
 
@@ -159,6 +168,24 @@ omi-omni/
 | `make restart` | Restart all services |
 | `make clean` | Remove containers and volumes |
 | `make apk` | Build Android APK |
+
+## 🧪 Smoke Test
+
+Run the complete smoke test to verify your setup:
+
+```bash
+./scripts/smoke-mac.sh
+```
+
+This will:
+1. Validate docker compose configuration
+2. Start all services
+3. Check container status
+4. Test backend health (http://127.0.0.1:8002/health)
+5. Test Whisper server (http://127.0.0.1:8001/v1/models)
+6. Check backend logs for errors
+
+The script fails loudly if backend health check fails.
 
 ## 🔗 Related Issues
 
