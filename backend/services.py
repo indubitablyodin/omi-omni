@@ -33,26 +33,18 @@ class WhisperService:
         self.compute_type = settings.whisper_compute_type
         self.timeout = settings.transcription_timeout
         
-    async def transcribe(self, audio_bytes: bytes, language: Optional[str] = None) -> Dict[str, Any]:
+    async def transcribe(self, audio_bytes: bytes, language: Optional[str] = None) -> str:
         """Transcribe audio bytes. Returns OpenAI-compatible response."""
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
-                files = {"audio": ("audio.wav", audio_bytes, "audio/wav")}
-                data = {
-                    "model": self.model,
-                    "response_format": "verbose_json",
-                    "compute_type": self.compute_type,
-                }
-                if language:
-                    data["language"] = language
-                
+            async with httpx.AsyncClient(timeout=120.0) as client:
                 response = await client.post(
-                    f"{self.base_url}/transcribe",
-                    files=files,
-                    data=data,
+                    f"http://{settings.whisper_host}:{settings.whisper_port}/v1/audio/transcriptions",
+                    files={"file": ("audio.wav", audio_bytes, "audio/wav")},
+                    data={"model": settings.whisper_model},
                 )
                 response.raise_for_status()
-                return response.json()
+                payload = response.json()
+                return payload.get("text", "")
         except httpx.TimeoutException as e:
             logger.error(f"Whisper transcription timeout: {e}")
             raise Exception(f"Transcription timeout after {self.timeout} seconds")
